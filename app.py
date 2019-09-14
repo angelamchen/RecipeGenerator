@@ -3,6 +3,8 @@ from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from msrest.authentication import CognitiveServicesCredentials
 from flask import Flask
 import os
+import json
+import requests
 
 # Load the system variables using dotenv
 from dotenv import load_dotenv
@@ -21,15 +23,16 @@ computervision_client = ComputerVisionClient(
 # Create flask application
 app = Flask(__name__)
 
+
 @app.route("/")
 def index():
     return "Hello world"
+
 
 @app.route("/image", methods=["GET", "POST"])
 def indentify():
     # Insert the image path that is being analyzed
     image_path = "http://amazingdomains.com/wp-content/uploads/2017/01/groceries.jpg"
-    print("\n\nImage URL:\n" + image_path)
 
     # detect general image
     image_description = computervision_client.describe_image(image_path)
@@ -42,18 +45,23 @@ def indentify():
             print("'{}' with confidence {:.2f}%".format(
                 caption.text, caption.confidence * 100))
 
-    # Detect specific objects 
+    # Detect specific objects
     remote_image_objects = computervision_client.detect_objects(image_path)
 
-    
+    objects = []
+
     print("\nDetecting objects in remote image:")
-    print(len(remote_image_objects.objects))
     if len(remote_image_objects.objects) == 0:
         print("No objects detected.")
     else:
         for object in remote_image_objects.objects:
-            print(object)
+            objects.append(object.object_property)
 
-    return "Done"
+    recipies = []
+    recipies = getRecipies(objects)
+
+    return json.dumps(objects)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
